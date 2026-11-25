@@ -1,6 +1,6 @@
-// Shared settings for every subproject, as in helios-cloud (HLD section 12,
-// "Java style guide"): Java 25, JUnit, JaCoCo with at least 90% line coverage,
-// google-java-format through Spotless, and Checkstyle with Google's checks.
+// Shared settings for every subproject: Java 25, JUnit, JaCoCo with at least
+// 90% line coverage, google-java-format through Spotless, and Checkstyle with
+// Google's checks.
 
 plugins {
     alias(libs.plugins.spotless) apply false
@@ -54,7 +54,7 @@ subprojects {
         }
     }
 
-    // HLD section 12: at least 90% line coverage. Generated code (Dagger) is
+    // At least 90% line coverage. Generated code (Dagger) is
     // excluded in the subprojects that have it.
     val coverage = tasks.register<JacocoCoverageVerification>("jacocoCoverage") {
         val report = tasks.named<JacocoReport>("jacocoTestReport").get()

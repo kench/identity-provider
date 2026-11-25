@@ -30,7 +30,7 @@ describe('IdentityProviderStack', () => {
 
   it('describes itself', () => {
     expect(synthesize().toJSON()['Description']).toBe(
-      'Identity provider shared by Helios, Kenley and MCP',
+      'Identity provider for our APIs and MCP servers',
     );
   });
 });

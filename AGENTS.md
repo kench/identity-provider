@@ -51,5 +51,4 @@ Don't reverse these silently; each ends with its own change:
 ## Out of scope
 
 Token exchange, our own token issuer, an identity map and a management API wait until a second
-issuer or customer needs them. Existing systems (the Kenley API, DDNS, heliosctl, Helios devices)
-keep their own authentication.
+issuer or customer needs them. Existing systems keep their own authentication.
