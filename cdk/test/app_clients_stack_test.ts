@@ -9,12 +9,30 @@ function synthesize(): Template {
 }
 
 describe('AppClientsStack', () => {
-  it('holds only the sign-in test client', () => {
+  it('holds only the sign-in test client and its managed login style', () => {
     const resources: Record<string, {Type: string}> =
       synthesize().toJSON()['Resources'];
-    expect(Object.values(resources).map(resource => resource.Type)).toEqual([
+    expect(
+      Object.values(resources)
+        .map(resource => resource.Type)
+        .sort(),
+    ).toEqual([
+      'AWS::Cognito::ManagedLoginBranding',
       'AWS::Cognito::UserPoolClient',
     ]);
+  });
+
+  it("styles the sign-in test client's managed login with the defaults", () => {
+    const template = synthesize();
+    const [clientId] = Object.keys(
+      template.findResources('AWS::Cognito::UserPoolClient'),
+    );
+    template.hasResourceProperties('AWS::Cognito::ManagedLoginBranding', {
+      ClientId: {Ref: clientId},
+      UseCognitoProvidedValues: true,
+      Settings: Match.absent(),
+      Assets: Match.absent(),
+    });
   });
 
   it('lets the sign-in test client sign in through Google only', () => {

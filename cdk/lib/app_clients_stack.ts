@@ -1,6 +1,8 @@
 /**
  * @fileoverview The user pool's app clients: the applications people sign in
- * to. Every client signs in through Google only and gets no password flows.
+ * to. Every client signs in through Google only and gets no password flows,
+ * and has a managed login style: without one, the newer managed login shows
+ * "Login pages unavailable" for that client.
  *
  * Until the WAF exists, Cognito's open dynamic client registration stays off,
  * so each client is registered here.
@@ -9,6 +11,7 @@
 import {Duration, NestedStack} from 'aws-cdk-lib';
 import type {NestedStackProps} from 'aws-cdk-lib';
 import {
+  CfnManagedLoginBranding,
   CfnUserPoolClient,
   OAuthScope,
   UserPoolClient,
@@ -71,5 +74,15 @@ export class AppClientsStack extends NestedStack {
     cfnClient.explicitAuthFlows = ['ALLOW_REFRESH_TOKEN_AUTH'];
     // A client naming Google fails to create until the provider exists.
     this.signInTest.node.addDependency(props.google);
+    this.addManagedLoginStyle(props.userPool, this.signInTest);
+  }
+
+  /** Gives a client's managed login pages Cognito's default look. */
+  private addManagedLoginStyle(userPool: UserPool, client: UserPoolClient) {
+    new CfnManagedLoginBranding(client, 'ManagedLoginStyle', {
+      userPoolId: userPool.userPoolId,
+      clientId: client.userPoolClientId,
+      useCognitoProvidedValues: true,
+    });
   }
 }
