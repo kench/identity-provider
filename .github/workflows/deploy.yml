@@ -1,0 +1,69 @@
+name: Deploy
+
+# Deploys the IdentityProvider stack. It runs only when started by hand from
+# main (Actions tab, or `gh workflow run deploy.yml --ref main`): merging a PR
+# never deploys by itself. docs/deploy-role.md sets up the role it assumes.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write # for the OIDC token that AWS exchanges for credentials
+  contents: read
+
+# One deploy at a time. A second run waits instead of cancelling one in
+# progress, which could leave CloudFormation mid-update.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: cdk
+
+jobs:
+  deploy:
+    name: Deploy IdentityProvider
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The role's trust policy accepts only this environment's OIDC subject, and
+    # the environment accepts only main. AWS_ROLE_ARN is an environment secret,
+    # so the account ID in it is masked in these public logs.
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: cdk/.nvmrc
+          cache: npm
+          cache-dependency-path: cdk/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # CI already passed for this commit (the ruleset), but a deploy should
+      # never go out from a tree that doesn't build or test.
+      - name: Type-check and test
+        run: |
+          npm run build
+          npm test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: identity-provider-deploy-${{ github.run_id }}
+          aws-region: us-west-2
+          # The logs are public; CDK prints ARNs that contain the account ID.
+          mask-aws-account-id: true
+
+      # Logged so that each run shows what it changed.
+      - name: Diff
+        run: npx cdk diff IdentityProvider
+
+      - name: Deploy
+        run: npx cdk deploy IdentityProvider --require-approval never
