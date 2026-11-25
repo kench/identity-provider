@@ -1,7 +1,7 @@
 {
   "name": "identity-provider-cdk",
   "version": "0.1.0",
-  "description": "CDK app for the identity provider shared by Helios and Kenley",
+  "description": "CDK app for the identity provider for our APIs and MCP servers",
   "private": true,
   "license": "CC0-1.0",
   "engines": {

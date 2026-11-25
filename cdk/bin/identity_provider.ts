@@ -1,8 +1,8 @@
 /**
  * @fileoverview The CDK app entry point (cdk.json runs it with tsx).
  *
- * The identity provider uses the same AWS account and region as the Helios and
- * Kenley stacks, in its own stack.
+ * The identity provider uses the same AWS account and region as our other
+ * stacks, in its own stack.
  */
 
 import {App} from 'aws-cdk-lib';

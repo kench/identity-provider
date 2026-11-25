@@ -1,5 +1,4 @@
-# Versions for the identity provider's Java code, as in helios-cloud
-# (HLD section 12, "Java style guide").
+# Versions for the identity provider's Java code.
 [versions]
 checkstyle = "14.4.0"
 google-java-format = "2.0.0"
