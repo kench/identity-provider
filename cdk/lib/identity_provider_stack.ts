@@ -12,6 +12,11 @@ import type {StackProps} from 'aws-cdk-lib';
 import type {Construct} from 'constructs';
 
 import {AppClientsStack, SIGN_IN_TEST_CALLBACK_URL} from './app_clients_stack';
+import {
+  MCP_SCOPE_NAME,
+  MCP_SERVER_URL,
+  ResourceServersStack,
+} from './resource_servers_stack';
 import {UserPoolStack} from './user_pool_stack';
 
 /** The identity provider's top-level stack. */
@@ -20,6 +25,8 @@ export class IdentityProviderStack extends Stack {
   readonly userPool: UserPoolStack;
   /** The user pool's app clients. */
   readonly appClients: AppClientsStack;
+  /** The APIs that accept the pool's access tokens, and their scopes. */
+  readonly resourceServers: ResourceServersStack;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, {
@@ -28,6 +35,9 @@ export class IdentityProviderStack extends Stack {
     });
 
     this.userPool = new UserPoolStack(this, 'UserPool');
+    this.resourceServers = new ResourceServersStack(this, 'ResourceServers', {
+      userPool: this.userPool.userPool,
+    });
     this.appClients = new AppClientsStack(this, 'AppClients', {
       userPool: this.userPool.userPool,
       google: this.userPool.google,
@@ -48,6 +58,14 @@ export class IdentityProviderStack extends Stack {
     new CfnOutput(this, 'GoogleRedirectUri', {
       description: "The Google OAuth client's authorised redirect URI",
       value: `${this.userPool.domain.baseUrl()}/oauth2/idpresponse`,
+    });
+    new CfnOutput(this, 'McpResource', {
+      description: "The MCP server's resource identifier and token audience",
+      value: MCP_SERVER_URL,
+    });
+    new CfnOutput(this, 'McpScope', {
+      description: 'The scope MCP clients ask for',
+      value: `${MCP_SERVER_URL}/${MCP_SCOPE_NAME}`,
     });
     new CfnOutput(this, 'SignInTestUrl', {
       description: 'Opens Google sign-in for the sign-in test client',
