@@ -15,6 +15,9 @@ The first customer is a Java MCP server. It serves its own protected resource me
 naming Cognito as its authorization server, and checks each request's bearer token with the
 verifier.
 
+Sign-in is through Google, limited to our Google Workspace; the one-time Google Cloud setup is in
+[docs/google-workspace-setup.md](docs/google-workspace-setup.md).
+
 ## Build
 
 ```sh
