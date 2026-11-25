@@ -2,8 +2,8 @@
 
 Identity for our APIs and MCP servers, built on Amazon Cognito.
 
-Cognito runs users, sign-in (managed login with MFA, passkeys and federated OIDC providers), and
-issues access tokens bound to the API they're for. This repository configures Cognito in CDK and
+Cognito runs users, sign-in (managed login, federated to Google), and issues access tokens bound
+to the API they're for. This repository configures Cognito in CDK and
 provides the parts an API uses to trust those tokens:
 
 - **CDK** (`cdk/`): the user pool, its app clients and each API's resource server and scopes.

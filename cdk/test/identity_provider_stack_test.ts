@@ -22,11 +22,12 @@ function output(name: string): string {
 }
 
 describe('IdentityProviderStack', () => {
-  it('holds only nested stacks', () => {
+  it('holds only the nested stacks', () => {
     const resources: Record<string, {Type: string}> =
       synthesize().toJSON()['Resources'] ?? {};
     const types = Object.values(resources).map(resource => resource.Type);
     expect(types.filter(type => type !== CDK_METADATA)).toEqual([
+      'AWS::CloudFormation::Stack',
       'AWS::CloudFormation::Stack',
     ]);
   });
@@ -35,6 +36,17 @@ describe('IdentityProviderStack', () => {
     expect(synthesize().toJSON()['Description']).toBe(
       'Identity provider for our APIs and MCP servers',
     );
+  });
+
+  it('creates the app clients after Google sign-in exists', () => {
+    const stacks = synthesize().findResources('AWS::CloudFormation::Stack');
+    const [id, appClients] = Object.entries(stacks).find(([key]) =>
+      key.startsWith('AppClients'),
+    )!;
+    expect(id).toBeDefined();
+    expect(appClients['DependsOn']).toEqual([
+      expect.stringMatching(/^UserPoolNestedStack/),
+    ]);
   });
 
   it('outputs the user pool, issuer and Google setup values', () => {
@@ -47,6 +59,10 @@ describe('IdentityProviderStack', () => {
     );
     expect(output('GoogleRedirectUri')).toBe(
       `https://<ref>.auth.${REGION}.amazoncognito.com/oauth2/idpresponse`,
+    );
+    expect(output('SignInTestUrl')).toBe(
+      `https://<ref>.auth.${REGION}.amazoncognito.com/login?client_id=<ref>` +
+        '&response_type=code&redirect_uri=http://localhost:8080/callback',
     );
   });
 });

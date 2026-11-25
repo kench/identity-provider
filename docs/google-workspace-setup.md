@@ -62,6 +62,20 @@ at deploy time, so its value never appears in the template.
 Say that the secret `identity-provider/google-oauth` exists. Don't paste the client ID or secret:
 the CDK only needs the secret's name.
 
+## 6. Try signing in
+
+Once the stack with Google sign-in is deployed, the deploy run's outputs include `SignInTestUrl`,
+the managed login page for the `sign-in-test` app client. Open it and sign in with a Workspace
+account:
+
+- **It works** if the browser lands on `http://localhost:8080/callback?code=…`. Nothing listens
+  there, so the page itself fails to load; the `code` in the address bar is the proof. Don't share
+  it: it's single-use and expires in minutes, but it's still a credential until then.
+- Signing in with an account outside the Workspace should fail at Google with an error that the
+  app is restricted to its organisation.
+
+The first sign-in creates the user `google_<Google subject>` in the user pool.
+
 ## When the custom domain arrives
 
 The custom domain deploy (under `services.kenley.tv`) changes the user pool domain. Before that
