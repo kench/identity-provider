@@ -2,6 +2,7 @@ import {Match, Template} from 'aws-cdk-lib/assertions';
 
 import {
   COGNITO_DOMAIN_PREFIX,
+  GOOGLE_OAUTH_SECRET_NAME,
   ISSUER_TYPE,
   USER_POOL_NAME,
 } from '../lib/user_pool_stack';
@@ -13,14 +14,18 @@ function synthesize(): Template {
 }
 
 describe('UserPoolStack', () => {
-  it('holds only the user pool and its domain', () => {
+  it('holds only the user pool, its domain and Google sign-in', () => {
     const resources: Record<string, {Type: string}> =
       synthesize().toJSON()['Resources'];
     expect(
       Object.values(resources)
         .map(resource => resource.Type)
         .sort(),
-    ).toEqual(['AWS::Cognito::UserPool', 'AWS::Cognito::UserPoolDomain']);
+    ).toEqual([
+      'AWS::Cognito::UserPool',
+      'AWS::Cognito::UserPoolDomain',
+      'AWS::Cognito::UserPoolIdentityProvider',
+    ]);
   });
 
   it('allows no sign-up, recovery or local sign-in', () => {
@@ -60,5 +65,30 @@ describe('UserPoolStack', () => {
       ManagedLoginVersion: 2,
       CustomDomainConfig: Match.absent(),
     });
+  });
+
+  it('signs in through Google with credentials resolved from the secret', () => {
+    const resolve = (field: string) =>
+      `{{resolve:secretsmanager:${GOOGLE_OAUTH_SECRET_NAME}:SecretString:${field}::}}`;
+    expect(GOOGLE_OAUTH_SECRET_NAME).toBe('identity-provider/google-oauth');
+    synthesize().hasResourceProperties(
+      'AWS::Cognito::UserPoolIdentityProvider',
+      {
+        ProviderName: 'Google',
+        ProviderType: 'Google',
+        ProviderDetails: {
+          client_id: resolve('clientId'),
+          client_secret: resolve('clientSecret'),
+          authorize_scopes: 'openid email profile',
+        },
+        AttributeMapping: {
+          email: 'email',
+          email_verified: 'email_verified',
+          name: 'name',
+          given_name: 'given_name',
+          family_name: 'family_name',
+        },
+      },
+    );
   });
 });

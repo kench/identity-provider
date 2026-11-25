@@ -11,12 +11,15 @@ import {CfnOutput, Stack} from 'aws-cdk-lib';
 import type {StackProps} from 'aws-cdk-lib';
 import type {Construct} from 'constructs';
 
+import {AppClientsStack, SIGN_IN_TEST_CALLBACK_URL} from './app_clients_stack';
 import {UserPoolStack} from './user_pool_stack';
 
 /** The identity provider's top-level stack. */
 export class IdentityProviderStack extends Stack {
-  /** The user pool and its domain. */
+  /** The user pool, its domain and Google sign-in. */
   readonly userPool: UserPoolStack;
+  /** The user pool's app clients. */
+  readonly appClients: AppClientsStack;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, {
@@ -25,6 +28,10 @@ export class IdentityProviderStack extends Stack {
     });
 
     this.userPool = new UserPoolStack(this, 'UserPool');
+    this.appClients = new AppClientsStack(this, 'AppClients', {
+      userPool: this.userPool.userPool,
+      google: this.userPool.google,
+    });
 
     new CfnOutput(this, 'UserPoolId', {
       description: 'The Cognito user pool ID',
@@ -41,6 +48,12 @@ export class IdentityProviderStack extends Stack {
     new CfnOutput(this, 'GoogleRedirectUri', {
       description: "The Google OAuth client's authorised redirect URI",
       value: `${this.userPool.domain.baseUrl()}/oauth2/idpresponse`,
+    });
+    new CfnOutput(this, 'SignInTestUrl', {
+      description: 'Opens Google sign-in for the sign-in test client',
+      value: this.userPool.domain.signInUrl(this.appClients.signInTest, {
+        redirectUri: SIGN_IN_TEST_CALLBACK_URL,
+      }),
     });
   }
 }
