@@ -9,7 +9,7 @@ tokens. The first customer is a Java MCP server; `README.md` covers the design.
 ```
 cdk/    CDK app (TypeScript): the IdentityProvider stack. cdk/AGENTS.md has the CDK instructions
 java/   Gradle project (Java 25): verifier/, the iss-keyed access token verifier library
-docs/   by-hand setup outside AWS (Google Workspace sign-in)
+docs/   by-hand setup: Google Workspace sign-in, the deploy role
 ```
 
 ## Check your work
@@ -23,8 +23,11 @@ CI runs these on every PR, with at least 90% line coverage in both.
 
 ## Deploying
 
-Never run `cdk deploy` locally. Deploys will run from a manual GitHub workflow on `main`, only
-when the owner asks; until that workflow exists, nothing is deployed.
+Only through `.github/workflows/deploy.yml`, started by hand from `main`
+(`gh workflow run deploy.yml --ref main`), and only when the owner asks. Never run `cdk deploy`
+locally. The workflow runs in the `production` environment and assumes `identity-provider-deploy`,
+which trusts only that environment's OIDC subject (`docs/deploy-role.md`). The repository and its
+Actions logs are public: keep the AWS account ID out of both.
 
 ## Rules
 
