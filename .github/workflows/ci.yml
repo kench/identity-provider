@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conventional-commits:
+    name: Conventional Commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # The title becomes the commit message on main for squash merges; the PR's own
+      # commits are checked too, in case it's merged another way.
+      - name: Check PR title and commit subjects
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          echo "PR title:"
+          printf '%s\n' "$PR_TITLE" | sh .github/scripts/check-conventional-commit.sh
+          echo
+          echo "Commits:"
+          git log --no-merges --format=%s "$BASE_SHA..$HEAD_SHA" \
+            | sh .github/scripts/check-conventional-commit.sh
+
+  cdk:
+    name: CDK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cdk
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: cdk/.nvmrc
+          cache: npm
+          cache-dependency-path: cdk/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run build
+
+      - name: Check style
+        run: npm run lint
+
+      # Fails below 90% line coverage (coverageThreshold in package.json).
+      - name: Test with coverage
+        run: npm test
+
+      # Without AWS credentials; nothing is deployed from CI.
+      - name: Synthesize
+        run: npx cdk synth --quiet
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cdk-coverage
+          path: cdk/coverage/
+          if-no-files-found: ignore
+
+  java:
+    name: Java
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: java
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: corretto
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # Spotless (google-java-format), Checkstyle (google_checks.xml), the tests,
+      # and at least 90% line coverage (JaCoCo).
+      - name: Check
+        run: ./gradlew --no-daemon check
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: java-reports
+          path: java/*/build/reports/
+          if-no-files-found: ignore

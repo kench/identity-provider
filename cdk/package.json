@@ -1,0 +1,62 @@
+{
+  "name": "identity-provider-cdk",
+  "version": "0.1.0",
+  "description": "CDK app for the identity provider shared by Helios and Kenley",
+  "private": true,
+  "license": "CC0-1.0",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "gts lint",
+    "fix": "gts fix",
+    "test": "jest --coverage",
+    "synth": "cdk synth",
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.277.0",
+    "constructs": "^10.5.0"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.15.0",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30",
+    "@types/node": "^26.6.6",
+    "aws-cdk": "2.1149.0",
+    "gts": "^7.0.0",
+    "jest": "^30",
+    "tsx": "^4.23.0",
+    "typescript": "~6.0.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/test"
+    ],
+    "testMatch": [
+      "**/*_test.ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": [
+        "@swc/jest"
+      ]
+    },
+    "setupFilesAfterEnv": [
+      "aws-cdk-lib/testhelpers/jest-autoclean"
+    ],
+    "collectCoverageFrom": [
+      "lib/**/*.ts"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "lines": 90
+      }
+    }
+  }
+}
