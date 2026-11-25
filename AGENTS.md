@@ -9,6 +9,7 @@ tokens. The first customer is a Java MCP server; `README.md` covers the design.
 ```
 cdk/    CDK app (TypeScript): the IdentityProvider stack. cdk/AGENTS.md has the CDK instructions
 java/   Gradle project (Java 25): verifier/, the iss-keyed access token verifier library
+docs/   by-hand setup outside AWS (Google Workspace sign-in)
 ```
 
 ## Check your work
@@ -34,6 +35,9 @@ when the owner asks; until that workflow exists, nothing is deployed.
   for an unlisted issuer. A user is `(iss, sub)`, never `sub` alone.
 - IAM grants stay least-privilege and are asserted exactly in the tests.
 - Never log or print tokens, client secrets or keys, or pass them as command-line arguments.
+- Sign-in is Google only, limited to our Workspace: no local users or passwords, self sign-up off.
+  The Google OAuth client's credentials live in the Secrets Manager secret
+  `identity-provider/google-oauth`; the CDK refers to it by name only.
 - TypeScript: Google style (gts), named exports, `snake_case` files, TypeScript 6.0 until
   typescript-eslint supports 7. Java: Google Java Style, Dagger for dependency injection,
   JUnit, JaCoCo and Mockito.
