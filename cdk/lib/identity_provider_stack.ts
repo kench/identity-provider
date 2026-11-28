@@ -13,6 +13,8 @@ import type {Construct} from 'constructs';
 
 import {AppClientsStack, SIGN_IN_TEST_CALLBACK_URL} from './app_clients_stack';
 import {
+  HELIOS_CONTROL_SCOPES,
+  HELIOS_CONTROL_URL,
   MCP_SCOPE_NAME,
   MCP_SERVER_URL,
   ResourceServersStack,
@@ -42,6 +44,8 @@ export class IdentityProviderStack extends Stack {
       userPool: this.userPool.userPool,
       google: this.userPool.google,
       twitch: this.userPool.twitch,
+      heliosControl: this.resourceServers.heliosControl,
+      heliosControlScopes: this.resourceServers.heliosControlScopes,
     });
 
     new CfnOutput(this, 'UserPoolId', {
@@ -67,6 +71,21 @@ export class IdentityProviderStack extends Stack {
     new CfnOutput(this, 'McpScope', {
       description: 'The scope MCP clients ask for',
       value: `${MCP_SERVER_URL}/${MCP_SCOPE_NAME}`,
+    });
+    new CfnOutput(this, 'HeliosControlResource', {
+      description:
+        "The Helios Control API's resource identifier and token audience",
+      value: HELIOS_CONTROL_URL,
+    });
+    new CfnOutput(this, 'HeliosControlScopes', {
+      description: 'The scopes the Helios console asks for, space-separated',
+      value: Object.keys(HELIOS_CONTROL_SCOPES)
+        .map(name => `${HELIOS_CONTROL_URL}/${name}`)
+        .join(' '),
+    });
+    new CfnOutput(this, 'HeliosConsoleClientId', {
+      description: "The Helios console's app client ID (public, no secret)",
+      value: this.appClients.heliosConsole.userPoolClientId,
     });
     new CfnOutput(this, 'SignInTestUrl', {
       description: 'Opens Google sign-in for the sign-in test client',

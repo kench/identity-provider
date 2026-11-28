@@ -42,13 +42,14 @@ describe('IdentityProviderStack', () => {
     );
   });
 
-  it('creates the app clients after Google sign-in exists', () => {
+  it('creates the app clients after sign-in and the resource servers exist', () => {
     const stacks = synthesize().findResources('AWS::CloudFormation::Stack');
     const [id, appClients] = Object.entries(stacks).find(([key]) =>
       key.startsWith('AppClients'),
     )!;
     expect(id).toBeDefined();
     expect(appClients['DependsOn']).toEqual([
+      expect.stringMatching(/^ResourceServersNestedStack/),
       expect.stringMatching(/^UserPoolNestedStack/),
     ]);
   });
@@ -66,6 +67,14 @@ describe('IdentityProviderStack', () => {
     );
     expect(output('McpResource')).toBe('https://mcp.services.kenley.tv');
     expect(output('McpScope')).toBe('https://mcp.services.kenley.tv/mcp');
+    expect(output('HeliosControlResource')).toBe(
+      'https://helios-control.services.kenley.tv',
+    );
+    expect(output('HeliosControlScopes')).toBe(
+      'https://helios-control.services.kenley.tv/read ' +
+        'https://helios-control.services.kenley.tv/write',
+    );
+    expect(output('HeliosConsoleClientId')).toBe('<ref>');
     expect(output('SignInTestUrl')).toBe(
       `https://<ref>.auth.${REGION}.amazoncognito.com/login?client_id=<ref>` +
         '&response_type=code&redirect_uri=http://localhost:8080/callback',

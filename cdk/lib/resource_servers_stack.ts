@@ -26,6 +26,20 @@ export const MCP_SERVER_URL = 'https://mcp.services.kenley.tv';
 /** The MCP server's one scope, for now: everything the server offers. */
 export const MCP_SCOPE_NAME = 'mcp';
 
+/**
+ * The Helios Control API's resource identifier, and the `aud` of the access
+ * tokens issued for it. A stable name for the API, not where it's served:
+ * nothing needs to answer at this URL. Changing it invalidates every token
+ * issued for it.
+ */
+export const HELIOS_CONTROL_URL = 'https://helios-control.services.kenley.tv';
+
+/** The Helios Control API's scopes: reading devices, and changing them. */
+export const HELIOS_CONTROL_SCOPES = {
+  read: 'View Helios devices, their streams and Wi-Fi networks',
+  write: "Change Helios devices' streams and Wi-Fi networks",
+} as const;
+
 /** What the resource servers stack needs from the user pool stack. */
 export interface ResourceServersStackProps extends NestedStackProps {
   /** The user pool whose tokens the APIs accept. */
@@ -38,6 +52,10 @@ export class ResourceServersStack extends NestedStack {
   readonly mcpServer: UserPoolResourceServer;
   /** The scope an MCP client asks for: `<MCP server URL>/mcp`. */
   readonly mcpScope: OAuthScope;
+  /** The Helios Control API. */
+  readonly heliosControl: UserPoolResourceServer;
+  /** Its scopes: `<Helios Control URL>/read` and `/write`. */
+  readonly heliosControlScopes: OAuthScope[];
 
   constructor(scope: Construct, id: string, props: ResourceServersStackProps) {
     super(scope, id, {
@@ -58,5 +76,21 @@ export class ResourceServersStack extends NestedStack {
       scopes: [mcp],
     });
     this.mcpScope = OAuthScope.resourceServer(this.mcpServer, mcp);
+
+    const heliosScopes = Object.entries(HELIOS_CONTROL_SCOPES).map(
+      ([scopeName, scopeDescription]) =>
+        new ResourceServerScope({scopeName, scopeDescription}),
+    );
+    this.heliosControl = new UserPoolResourceServer(this, 'HeliosControl', {
+      userPool: props.userPool,
+      identifier: HELIOS_CONTROL_URL,
+      userPoolResourceServerName: 'Helios Control API',
+      scopes: heliosScopes,
+    });
+    // Plain strings from the constant identifier, so clients in other
+    // stacks don't take a reference to this one (they depend on it instead).
+    this.heliosControlScopes = Object.keys(HELIOS_CONTROL_SCOPES).map(name =>
+      OAuthScope.custom(`${HELIOS_CONTROL_URL}/${name}`),
+    );
   }
 }
