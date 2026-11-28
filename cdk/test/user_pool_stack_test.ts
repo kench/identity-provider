@@ -4,6 +4,7 @@ import {
   COGNITO_DOMAIN_PREFIX,
   GOOGLE_OAUTH_SECRET_NAME,
   ISSUER_TYPE,
+  TWITCH_OAUTH_SECRET_NAME,
   USER_POOL_NAME,
 } from '../lib/user_pool_stack';
 
@@ -14,7 +15,7 @@ function synthesize(): Template {
 }
 
 describe('UserPoolStack', () => {
-  it('holds only the user pool, its domain and Google sign-in', () => {
+  it('holds only the user pool, its domain and its sign-in', () => {
     const resources: Record<string, {Type: string}> =
       synthesize().toJSON()['Resources'];
     expect(
@@ -25,6 +26,18 @@ describe('UserPoolStack', () => {
       'AWS::Cognito::UserPool',
       'AWS::Cognito::UserPoolDomain',
       'AWS::Cognito::UserPoolIdentityProvider',
+      'AWS::Cognito::UserPoolIdentityProvider',
+      'AWS::DynamoDB::Table',
+      'AWS::IAM::Policy',
+      'AWS::IAM::Policy',
+      'AWS::IAM::Role',
+      'AWS::IAM::Role',
+      'AWS::Lambda::Function',
+      'AWS::Lambda::Function',
+      'AWS::Lambda::Permission',
+      'AWS::Lambda::Permission',
+      'AWS::Logs::LogGroup',
+      'AWS::Logs::LogGroup',
     ]);
   });
 
@@ -38,9 +51,8 @@ describe('UserPoolStack', () => {
       },
       MfaConfiguration: 'OFF',
       UsernameConfiguration: {CaseSensitive: false},
-      // No passwordless or passkey sign-in, and no Lambda triggers.
+      // No passwordless or passkey sign-in.
       Policies: Match.absent(),
-      LambdaConfig: Match.absent(),
     });
   });
 
@@ -88,6 +100,27 @@ describe('UserPoolStack', () => {
           given_name: 'given_name',
           family_name: 'family_name',
         },
+      },
+    );
+  });
+
+  it('signs in through Twitch with credentials resolved from the secret', () => {
+    const resolve = (field: string) =>
+      `{{resolve:secretsmanager:${TWITCH_OAUTH_SECRET_NAME}:SecretString:${field}::}}`;
+    expect(TWITCH_OAUTH_SECRET_NAME).toBe('identity-provider/twitch-oauth');
+    synthesize().hasResourceProperties(
+      'AWS::Cognito::UserPoolIdentityProvider',
+      {
+        ProviderName: 'Twitch',
+        ProviderType: 'OIDC',
+        ProviderDetails: {
+          client_id: resolve('clientId'),
+          client_secret: resolve('clientSecret'),
+          authorize_scopes: 'openid',
+          attributes_request_method: 'GET',
+          oidc_issuer: 'https://id.twitch.tv/oauth2',
+        },
+        AttributeMapping: Match.absent(),
       },
     );
   });

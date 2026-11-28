@@ -2,11 +2,14 @@
  * @fileoverview The Cognito user pool: who can sign in, and the domain its
  * managed login and OAuth endpoints are served from.
  *
- * People sign in only through Google, limited to our Workspace, so the pool
- * holds no passwords: there's no self sign-up and no account recovery. The
- * Google OAuth client is created by hand (docs/google-workspace-setup.md) in a
- * Google Cloud project whose audience is Internal, so Google refuses every
- * account outside the Workspace.
+ * People sign in only through Google or Twitch, so the pool holds no
+ * passwords: there's no self sign-up and no account recovery.
+ *
+ * - Google is limited to our Workspace: its OAuth client is created by hand
+ *   (docs/google-workspace-setup.md) in a Google Cloud project whose audience
+ *   is Internal, so Google refuses every account outside the Workspace.
+ * - Twitch is limited to the users in the allowlist table, which the sign-in
+ *   triggers check (docs/twitch-setup.md).
  */
 
 import {NestedStack, RemovalPolicy, SecretValue} from 'aws-cdk-lib';
@@ -20,9 +23,13 @@ import {
   ProviderAttribute,
   UserPool,
   UserPoolIdentityProviderGoogle,
+  UserPoolIdentityProviderOidc,
 } from 'aws-cdk-lib/aws-cognito';
 import type {UserPoolDomain} from 'aws-cdk-lib/aws-cognito';
 import type {Construct} from 'constructs';
+
+import {TWITCH} from '../lambda/sign_in_providers';
+import {SignInTriggers} from './sign_in_triggers';
 
 /** The user pool's name. */
 export const USER_POOL_NAME = 'identity-provider';
@@ -51,19 +58,29 @@ export const GOOGLE_OAUTH_SECRET_NAME = 'identity-provider/google-oauth';
 /** The Google scopes Cognito asks for: just enough to identify the person. */
 export const GOOGLE_SCOPES = ['openid', 'email', 'profile'];
 
-/** The nested stack for the user pool, its domain and Google sign-in. */
+/**
+ * The Secrets Manager secret holding the Twitch application's `clientId` and
+ * `clientSecret`, referred to by name only like Google's.
+ */
+export const TWITCH_OAUTH_SECRET_NAME = 'identity-provider/twitch-oauth';
+
+/** The nested stack for the user pool, its domain and its sign-in. */
 export class UserPoolStack extends NestedStack {
   /** The user pool. */
   readonly userPool: UserPool;
   /** The Cognito prefix domain, with the newer managed login. */
   readonly domain: UserPoolDomain;
-  /** Sign-in through Google, the pool's only identity provider. */
+  /** Sign-in through Google, for our Workspace. */
   readonly google: UserPoolIdentityProviderGoogle;
+  /** Sign-in through Twitch, for allowlisted users. */
+  readonly twitch: UserPoolIdentityProviderOidc;
+  /** The triggers that enforce the allowlist and add the upstream claims. */
+  readonly triggers: SignInTriggers;
 
   constructor(scope: Construct, id: string, props?: NestedStackProps) {
     super(scope, id, {
       description:
-        'Identity provider: the Cognito user pool, its domain and Google sign-in',
+        'Identity provider: the Cognito user pool, its domain and its sign-in',
       ...props,
     });
 
@@ -105,6 +122,24 @@ export class UserPoolStack extends NestedStack {
         givenName: ProviderAttribute.GOOGLE_GIVEN_NAME,
         familyName: ProviderAttribute.GOOGLE_FAMILY_NAME,
       },
+    });
+
+    const twitchOAuth = (field: string) =>
+      SecretValue.secretsManager(TWITCH_OAUTH_SECRET_NAME, {jsonField: field});
+    this.twitch = new UserPoolIdentityProviderOidc(this, 'Twitch', {
+      userPool: this.userPool,
+      name: TWITCH.name,
+      issuerUrl: TWITCH.issuer,
+      clientId: twitchOAuth('clientId').unsafeUnwrap(),
+      clientSecret: twitchOAuth('clientSecret').unsafeUnwrap(),
+      // Twitch's only scope. Its email and username come only with a `claims`
+      // request parameter, which Cognito doesn't send, so Cognito gets just
+      // the Twitch user ID.
+      scopes: ['openid'],
+    });
+
+    this.triggers = new SignInTriggers(this, 'SignInTriggers', {
+      userPool: this.userPool,
     });
   }
 

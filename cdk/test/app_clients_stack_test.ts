@@ -35,12 +35,12 @@ describe('AppClientsStack', () => {
     });
   });
 
-  it('lets the sign-in test client sign in through Google only', () => {
+  it('lets the sign-in test client sign in through Google or Twitch', () => {
     expect(SIGN_IN_TEST_CALLBACK_URL).toBe('http://localhost:8080/callback');
     synthesize().hasResourceProperties('AWS::Cognito::UserPoolClient', {
       ClientName: 'sign-in-test',
       GenerateSecret: false,
-      SupportedIdentityProviders: ['Google'],
+      SupportedIdentityProviders: ['Google', 'Twitch'],
       // No password, SRP or custom sign-in through the Cognito API.
       ExplicitAuthFlows: ['ALLOW_REFRESH_TOKEN_AUTH'],
       AllowedOAuthFlowsUserPoolClient: true,

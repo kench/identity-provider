@@ -20,11 +20,14 @@
     "constructs": "^10.5.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1179.0",
     "@swc/core": "^1.15.0",
     "@swc/jest": "^0.2.39",
+    "@types/aws-lambda": "^8.10.164",
     "@types/jest": "^30",
     "@types/node": "^26.6.6",
     "aws-cdk": "2.1149.0",
+    "esbuild": "^0.28.2",
     "gts": "^7.0.0",
     "jest": "^30",
     "tsx": "^4.23.0",
@@ -47,6 +50,7 @@
       "aws-cdk-lib/testhelpers/jest-autoclean"
     ],
     "collectCoverageFrom": [
+      "lambda/**/*.ts",
       "lib/**/*.ts"
     ],
     "coverageReporters": [
