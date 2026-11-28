@@ -12,6 +12,9 @@ function synthesize(): Template {
 /** An output's value with the nested stack's reference replaced by `<ref>`. */
 function output(name: string): string {
   const value = synthesize().toJSON()['Outputs'][name]['Value'];
+  if (typeof value === 'string') {
+    return value;
+  }
   if (value['Fn::Join'] === undefined) {
     return '<ref>';
   }
@@ -27,6 +30,7 @@ describe('IdentityProviderStack', () => {
       synthesize().toJSON()['Resources'] ?? {};
     const types = Object.values(resources).map(resource => resource.Type);
     expect(types.filter(type => type !== CDK_METADATA)).toEqual([
+      'AWS::CloudFormation::Stack',
       'AWS::CloudFormation::Stack',
       'AWS::CloudFormation::Stack',
     ]);
@@ -60,6 +64,8 @@ describe('IdentityProviderStack', () => {
     expect(output('GoogleRedirectUri')).toBe(
       `https://<ref>.auth.${REGION}.amazoncognito.com/oauth2/idpresponse`,
     );
+    expect(output('McpResource')).toBe('https://mcp.services.kenley.tv');
+    expect(output('McpScope')).toBe('https://mcp.services.kenley.tv/mcp');
     expect(output('SignInTestUrl')).toBe(
       `https://<ref>.auth.${REGION}.amazoncognito.com/login?client_id=<ref>` +
         '&response_type=code&redirect_uri=http://localhost:8080/callback',
