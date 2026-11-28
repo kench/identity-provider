@@ -6,9 +6,13 @@ import {IdentityProviderStack} from '../lib/identity_provider_stack';
 export const ACCOUNT = '123456789012';
 export const REGION = 'us-west-2';
 
-/** A fresh identity provider stack in its own app. */
+/**
+ * A fresh identity provider stack in its own app. The trigger functions aren't
+ * bundled, which keeps the tests fast; `cdk synth` bundles them.
+ */
 export function testStack(): IdentityProviderStack {
-  return new IdentityProviderStack(new App(), 'IdentityProvider', {
+  const app = new App({context: {'aws:cdk:bundling-stacks': []}});
+  return new IdentityProviderStack(app, 'IdentityProvider', {
     env: {account: ACCOUNT, region: REGION},
   });
 }

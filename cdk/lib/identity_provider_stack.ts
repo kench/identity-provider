@@ -41,6 +41,7 @@ export class IdentityProviderStack extends Stack {
     this.appClients = new AppClientsStack(this, 'AppClients', {
       userPool: this.userPool.userPool,
       google: this.userPool.google,
+      twitch: this.userPool.twitch,
     });
 
     new CfnOutput(this, 'UserPoolId', {

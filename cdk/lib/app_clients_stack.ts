@@ -1,6 +1,6 @@
 /**
  * @fileoverview The user pool's app clients: the applications people sign in
- * to. Every client signs in through Google only and gets no password flows,
+ * to. Every client signs in through Google or Twitch and gets no password flows,
  * and has a managed login style: without one, the newer managed login shows
  * "Login pages unavailable" for that client.
  *
@@ -20,8 +20,11 @@ import {
 import type {
   UserPool,
   UserPoolIdentityProviderGoogle,
+  UserPoolIdentityProviderOidc,
 } from 'aws-cdk-lib/aws-cognito';
 import type {Construct} from 'constructs';
+
+import {TWITCH} from '../lambda/sign_in_providers';
 
 /**
  * Where the sign-in test client's authorization code goes. Nothing needs to
@@ -35,6 +38,8 @@ export interface AppClientsStackProps extends NestedStackProps {
   readonly userPool: UserPool;
   /** Google sign-in, which must exist before a client can name it. */
   readonly google: UserPoolIdentityProviderGoogle;
+  /** Twitch sign-in, likewise. */
+  readonly twitch: UserPoolIdentityProviderOidc;
 }
 
 /** The nested stack for the user pool's app clients. */
@@ -56,7 +61,10 @@ export class AppClientsStack extends NestedStack {
       userPool: props.userPool,
       userPoolClientName: 'sign-in-test',
       generateSecret: false,
-      supportedIdentityProviders: [UserPoolClientIdentityProvider.GOOGLE],
+      supportedIdentityProviders: [
+        UserPoolClientIdentityProvider.GOOGLE,
+        UserPoolClientIdentityProvider.custom(TWITCH.name),
+      ],
       oAuth: {
         flows: {authorizationCodeGrant: true},
         scopes: [OAuthScope.OPENID, OAuthScope.EMAIL, OAuthScope.PROFILE],
@@ -72,8 +80,8 @@ export class AppClientsStack extends NestedStack {
     // Cognito API. Left unset, Cognito would allow SRP and custom auth.
     const cfnClient = this.signInTest.node.defaultChild as CfnUserPoolClient;
     cfnClient.explicitAuthFlows = ['ALLOW_REFRESH_TOKEN_AUTH'];
-    // A client naming Google fails to create until the provider exists.
-    this.signInTest.node.addDependency(props.google);
+    // A client naming a provider fails to create until the provider exists.
+    this.signInTest.node.addDependency(props.google, props.twitch);
     this.addManagedLoginStyle(props.userPool, this.signInTest);
   }
 

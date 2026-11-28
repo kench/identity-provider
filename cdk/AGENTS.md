@@ -1,7 +1,8 @@
 # AGENTS.md
 
 The CDK app (TypeScript). `bin/identity_provider.ts` creates the `App`; the stack is in
-`lib/identity_provider_stack.ts`; `cdk.json` tells the CDK Toolkit how to run it.
+`lib/identity_provider_stack.ts`; `cdk.json` tells the CDK Toolkit how to run it. `lambda/` holds
+the sign-in triggers' code, bundled by `NodejsFunction` (esbuild); the tests skip bundling.
 
 ## Read the construct docs first
 
