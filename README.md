@@ -16,6 +16,11 @@ The first customer is a Java MCP server. It serves its own protected resource me
 naming Cognito as its authorization server, and checks each request's bearer token with the
 verifier.
 
+The second is the Helios console (kench/helios-console), a single-page app: the public app client
+`helios-console` signs in with the authorization code grant and PKCE, and asks for the Helios
+Control API's scopes (`https://helios-control.services.kenley.tv/read` and `/write`); the API
+checks that audience and those scopes.
+
 Sign-in is through Google, limited to our Google Workspace, or Twitch, limited to an allowlist. The
 one-time setup for each is in [docs/google-workspace-setup.md](docs/google-workspace-setup.md) and
 [docs/twitch-setup.md](docs/twitch-setup.md).
